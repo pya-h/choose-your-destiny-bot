@@ -11,7 +11,8 @@ from payagraph.tools import ParallelJob
 from payagraph.api_async import Request, Response
 from enum import Enum
 import asyncio
-
+from concurrent.futures import ThreadPoolExecutor
+import time
 
 class BotMode(Enum):
     WEBHOOK = 1
@@ -30,7 +31,7 @@ class TelegramBotCore:
         '''Calls the Telegram send message api.'''
         url = f"{self.bot_api_url}/sendMessage"
         chat_id = message.chat_id # message.by.chat_id
-        payload = {'chat_id': chat_id, 'text': message.text}
+        payload = {'chat_id': chat_id, 'text': message.text, "parse_mode": "markdown"}
         if keyboard:
             keyboard.attach_to(payload)
         # return requests.post(url, json=payload)
@@ -117,34 +118,53 @@ class TelegramBot(TelegramBotCore):
         @self.app.route(webhook_path, methods=['POST'])
         async def main():
             res = await self.handle(request.json)
-            print(res)
             return jsonify({'status': 'ok', 'data': res})
 
     def start_polling(self, interval: float):
         '''For longpoll bots'''
         self.polling_interval = interval
         self.event_loop = asyncio.get_event_loop()
-        self.event_loop.run_until_complete(self.handle_polling_updates())
-        
-    async def handle_polling_updates(self):
-        '''For longpoll bots'''
-        update_id = None
         while True:
             try:
-                updates = await self.get_updates(update_id)
-                print(updates)
-                if 'result' in updates:
-                    result = updates['result']
-                    for message in result:
-                        try:
-                            response = await self.handle(message)
-                            update_id = message['update_id'] + 1
-                        except Exception as ex:
-                            print(update_id, ex)
-                await asyncio.sleep(self.polling_interval)
+                self.event_loop.run_until_complete(self.handle_polling_updates())
+            except:
+                time.sleep(1)
+
+    def call_handle_function_thread(self, message: dict):
+        return asyncio.run(self.handle(message))
+    
+    async def handle_queue(self, queue: asyncio.Queue):
+        update_id: int | None = None
+        while True:
+            updates = await self.get_updates(update_id)
+            if 'result' in updates and (updates['result']):
+                result = updates['result']
+                for  message in result:
+                    await queue.put(message)
+                    update_id = message['update_id'] + 1
+            await asyncio.sleep(self.polling_interval)
+
+    async def process_queue(self, queue, executor):
+        while True:
+            try:
+                message = await queue.get()
+                loop = asyncio.get_event_loop()
+                task = loop.run_in_executor(executor, self.call_handle_function_thread, message)
+                await task
+                queue.task_done()
             except Exception as ex:
                 print(ex)
-                
+
+    async def handle_polling_updates(self):
+        '''For longpoll bots'''
+
+        queue = asyncio.Queue()
+        executor = ThreadPoolExecutor(max_workers=10)
+        await asyncio.gather(
+            self.handle_queue(queue),
+            self.process_queue(queue, executor)
+        )
+
     def go(self, polling: bool=False, polling_interval: float=0.1, debug=True):
         if polling:
             self.start_polling(polling_interval)
@@ -250,13 +270,14 @@ class TelegramBot(TelegramBotCore):
         response: GenericMessage| TelegramCallbackQuery = None
         keyboard: Keyboard | InlineKeyboard = None
         dont_use_main_keyboard: bool = False
+
         # TODO: run middlewares first
         if 'callback_query' in telegram_data:
             message = TelegramCallbackQuery(telegram_data)
             user = message.by
             if message.action in self.callback_query_hanndlers:
                 handler: Callable[[TelegramBotCore, TelegramCallbackQuery], Union[GenericMessage, Keyboard|InlineKeyboard]]  = self.callback_query_hanndlers[message.action]
-                response, keyboard = handler(self, message)
+                response, keyboard = await handler(self, message)
                 if not response.replace_on_previous:
                     self.answer_callback_query(message.callback_id, response.text, cache_time_sec=1)
         else:
@@ -265,16 +286,16 @@ class TelegramBot(TelegramBotCore):
             handler: Callable[[TelegramBotCore, GenericMessage], Union[GenericMessage, Keyboard|InlineKeyboard]] = None
             if message.text in self.command_handlers:
                 handler = self.command_handlers[message.text]
-                response, keyboard = handler(self, message)
+                response, keyboard = await handler(self, message)
             else:
                 if user.state is not None and user.state in self.state_handlers:
                     handler = self.state_handlers[user.state]
-                    response, keyboard = handler(self, message)
+                    response, keyboard = await handler(self, message)
 
                 if not response:
                     if message.text in self.message_handlers:
                         handler = self.message_handlers[message.text]
-                        response, keyboard = handler(self, message)
+                        response, keyboard = await handler(self, message)
         if not response:
             response = GenericMessage.Text(target_chat_id=user.chat_id, text=self.text("wrong_command", user.language))
 

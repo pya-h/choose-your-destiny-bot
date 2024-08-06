@@ -9,6 +9,8 @@ from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
 from hugchat_interface import HugchatInterface
+import os
+import shutil
 
 
 # Set up logging
@@ -25,25 +27,46 @@ HUGCHAT_PASSWORD = config('HUGCHAT_PASSWORD')
 # Read the text resource containing the multilanguage data for the bot texts, messages, commands and etc.
 # Also you can write your texts by hard coding but it will be hard implementing multilanguage texts that way,
 text_resources = manuwriter.load_json('texts', 'resources')
+INTRACTIVE_STORY_PROMPT = "Generate a random interactive story with random genre. Then inside the stpry, as story is going give the me choices, then i will input my choice and you should continue the story with my decisions. return ENDOFGAME when the story is completed."
 
-def play_handler(bot: TelegramBot, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
-    hi = HugchatInterface(HUGCHAT_EMAIL, HUGCHAT_PASSWORD)
-    answer = hi.activate(model_index=0, pattern_prompt="Generate a random interactive story with random genre. Then inside the stpry, as story is going give the me choices, then i will input my choice and you should continue the story with my decisions. return ENDOFGAME when the story is completed.")
-    user = User.Get(message.chat_id)
-    user.hugchat = hi
-    user.state = UserStates.PLAYING
-    return GenericMessage.Text(user.chat_id, answer), Keyboard(bot.keyword("gameover", user.language))
+async def play_handler(bot: TelegramBot, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
+    try:
+        user = User.Get(message.chat_id)
+        response_msg = GenericMessage.Text(user.chat_id, bot.text("wait_to_generate_story", user.language))
+        keyboard = Keyboard(bot.keyword("gameover", user.language))
+        update = await bot.send(response_msg, keyboard)
+        response_msg.id = update['result']['message_id']
+        hi = HugchatInterface(HUGCHAT_EMAIL, HUGCHAT_PASSWORD, user.chat_id)
+        answer = hi.activate(pattern_prompt=INTRACTIVE_STORY_PROMPT)
+        user.hugchat = hi
+        user.state = UserStates.PLAYING
+        response_msg.text = str(answer)
+        # response_msg.replace_on_previous = True
+    except Exception as ex:
+        print(ex)
+    return response_msg, None
 
-def playing_state_handler(bot: TelegramBot, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
+async def playing_state_handler(bot: TelegramBot, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
     choice = message.text
     user = User.Get(message.chat_id)
     if choice == bot.keyword("gameover", user.language):
-        user.hugchat = None
-        lang = user.language
-        del User.Instances[user.chat_id ]
+        lang = "en"
+        try:
+            shutil.rmtree(user.hugchat.cookie_dir_path)
+            user.hugchat = None
+            lang = user.language
+            del User.Instances[user.chat_id]
+        except Exception as ex:
+            print("Game end for user", message.chat_id, "failed:", ex)
         return GenericMessage.Text(message.chat_id, bot.text("game_ended", lang)), None
+    keyboard = Keyboard(bot.keyword("gameover", user.language))
+    response_msg = GenericMessage.Text(user.chat_id, bot.text("wait_to_take_action", user.language))
+    update = await bot.send(response_msg, keyboard)
+    response_msg.id = update['result']['message_id']
     res = user.hugchat.prompt(choice)
-    return GenericMessage.Text(user.chat_id, res), Keyboard(bot.keyword("gameover", user.language))
+    response_msg.text = str(res)
+    # response_msg.replace_on_previous = True
+    return response_msg, None
 
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["play"]["en"]),
@@ -54,7 +77,7 @@ bot = TelegramBot(token=BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, tex
 bot.add_command_handler(command="start", handler=play_handler)
 bot.add_state_handler(state=UserStates.PLAYING, handler=playing_state_handler)
 bot.add_message_handler(message=bot.keyword('play'), handler=play_handler)
-bot.start_polling(0.5)
+bot.start_polling(0.1)
 
 if __name__ == '__main__':
     bot.go(debug=False)  # Run the Flask app

@@ -19,26 +19,7 @@ class DatabaseInterfaceBase:
         return DatabaseInterfaceBase._instance
 
     def setup(self):
-        connection = None
-        try:
-            connection = sqlite3.connect(self._name, detect_types=sqlite3.PARSE_DECLTYPES)
-            cursor = connection.cursor()
-
-            # check if the table users was created
-            if not cursor.execute(f"SELECT name from sqlite_master WHERE name='{DatabaseInterfaceBase.TABLE_USERS}'").fetchone():
-                query = f"CREATE TABLE {DatabaseInterfaceBase.TABLE_USERS} ({DatabaseInterfaceBase.USER_ID} INTEGER PRIMARY KEY," +\
-                    f"{DatabaseInterfaceBase.USER_LANGUAGE} TEXT, {DatabaseInterfaceBase.USER_LAST_INTERACTION} DATE)"
-                # create table user
-                cursor.execute(query)
-                manuwriter.log(f"{DatabaseInterfaceBase.TABLE_USERS} table created successfuly.", category_name='info')
-            manuwriter.log("Database setup completed.", category_name='info')
-            cursor.close()
-            connection.close()
-        except Exception as ex:
-            if connection:
-                connection.close()
-            raise ex  # create custom exception for this
-
+        pass
 
     def add(self, user, log_category_prefix=''):
         connection = None
@@ -81,7 +62,7 @@ class DatabaseInterfaceBase:
         else:
             USER_ALL_FIELDS = f'({DatabaseInterfaceBase.USER_ID}, {DatabaseInterfaceBase.USER_LAST_INTERACTION}, {DatabaseInterfaceBase.USER_LANGUAGE})'
             cursor.execute(f"INSERT INTO {DatabaseInterfaceBase.TABLE_USERS} {USER_ALL_FIELDS} VALUES (?, ?, ?)", \
-                (user.chat_id, user.last_interaction.strftime(DatabaseInterfaceBase.DATE_FORMAT), user.is_intervaller, user.is_changer, user.language))
+                (user.chat_id, user.last_interaction.strftime(DatabaseInterfaceBase.DATE_FORMAT), user.language))
             manuwriter.log("New user started using this bot with chat_id=: " + user.__str__(), category_name=f'{log_category_prefix}info')
         connection.commit()
         cursor.close()

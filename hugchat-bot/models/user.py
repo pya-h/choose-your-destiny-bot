@@ -16,7 +16,7 @@ class UserStates(Enum):
 class User(UserBase):
     '''Extended version of the user model, varies by developer's need'''
 
-    def __init__(self, chat_id, language: str = 'fa', manual_garbage_collection: bool = True, hugchat_interface: HugchatInterface = None) -> None:
+    def __init__(self, chat_id, language: str = 'en', manual_garbage_collection: bool = True, hugchat_interface: HugchatInterface = None) -> None:
         super().__init__(chat_id, language, manual_garbage_collection=manual_garbage_collection)
         self.hugchat = hugchat_interface
 

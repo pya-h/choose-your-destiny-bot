@@ -1,13 +1,24 @@
 {
-    "game_ended": "You declared defeat? hmmmm...\nWell, Maybe next time.",
+    "game_ended": {
+        "en":"You declared defeat? hmmmm...\nWell, Maybe next time.", 
+        "fa": "مثل اینکه شکستتو قبول کردی! خب، شاید دفعه بعد :)"
+    },
     "keywords": {
         "play" : {
-            "fa": "Play",
+            "fa": "بازی",
             "en": "Play"
         },
         "gameover" : {
-            "fa": "Game Over",
+            "fa": "شکست",
             "en": "Game Over"
         }
+    },
+    "wait_to_take_action": {
+        "en": "Your answer has been received.\nWait until your action is taken; may take a little ...",
+        "fa": "خرکت شما دریافت شد.\nلطفا صبر کنید تا خرکت شما انجام شود. ممکن است کمی طول بکشد..."
+    },
+    "wait_to_generate_story": {
+        "en": "Hi! Thank you for participating.\nIm generating a new random story. It may take a while...",
+        "fa": "سلام! ممنون بابت مشارکتت!\nدارم داستان بازی رو بصورت تصادفی می سازم. ممکنه یکم طول بکشه ..."
     }
 }

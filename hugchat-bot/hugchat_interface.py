@@ -5,13 +5,14 @@ from random import randint
 
 
 class HugchatInterface:
-    CookiePath = './cookies/'
+    CookiePath = './cookies'
 
-    def __init__(self, email: str, password: str) -> None:
+    def __init__(self, email: str, password: str, id: int = 0) -> None:
         self.email = email
 
         self.auth = Login(self.email, password)
-        self.cookies = self.auth.login(cookie_dir_path=HugchatInterface.CookiePath, save_cookies=True)
+        self.cookie_dir_path = f"{HugchatInterface.CookiePath}/{id}"
+        self.cookies = self.auth.login(cookie_dir_path=self.cookie_dir_path, save_cookies=True)
 
         self.chatbot = hugchat.ChatBot(cookies=self.cookies.get_dict())
 
