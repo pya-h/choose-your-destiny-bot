@@ -2,3 +2,8 @@ adventures-token.json
 secure-connect-adventures.zip
 .env
 __pycache__
+*/*.zip
+*/*.tar.gz
+*/cqlsh-astra
+*/env
+*/cookies
