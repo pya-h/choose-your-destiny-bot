@@ -1,0 +1,13 @@
+{
+    "game_ended": "You declared defeat? hmmmm...\nWell, Maybe next time.",
+    "keywords": {
+        "play" : {
+            "fa": "Play",
+            "en": "Play"
+        },
+        "gameover" : {
+            "fa": "Game Over",
+            "en": "Game Over"
+        }
+    }
+}
