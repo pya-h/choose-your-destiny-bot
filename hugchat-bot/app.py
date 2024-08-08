@@ -43,7 +43,7 @@ async def play_handler(bot: TelegramBot, message: GenericMessage) -> Union[Gener
         # response_msg.replace_on_previous = True
     except Exception as ex:
         print(ex)
-    return response_msg, None
+    return response_msg, keyboard
 
 async def playing_state_handler(bot: TelegramBot, message: GenericMessage) -> Union[GenericMessage, Keyboard|InlineKeyboard]:
     choice = message.text
@@ -65,7 +65,7 @@ async def playing_state_handler(bot: TelegramBot, message: GenericMessage) -> Un
     res = user.hugchat.prompt(choice)
     response_msg.text = str(res)
     # response_msg.replace_on_previous = True
-    return response_msg, None
+    return response_msg, keyboard
 
 main_keyboard = {
     'en': Keyboard(text_resources["keywords"]["play"]["en"]),
