@@ -3,7 +3,7 @@ from db.interface import DatabaseInterface
 from datetime import datetime, date
 from tools.mathematix import tz_today
 from enum import Enum
-from payagraph.tools import extend_enum
+from payagram.tools import extend_enum
 
 
 ADMIN_USERNAME = config('ADMIN_USERNAME')

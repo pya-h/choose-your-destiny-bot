@@ -1,14 +1,14 @@
 from models.user import UserStates, User
 from typing import Callable, Dict, Union
 from tools.mathematix import minutes_to_timestamp
-from payagraph.containers import *
-from payagraph.keyboards import *
+from payagram.containers import *
+from payagram.keyboards import *
 from time import time
 from tools.planner import Planner
 from tools.exceptions import *
 from flask import Flask, request, jsonify
-from payagraph.tools import ParallelJob
-from payagraph.api_async import Request, Response
+from payagram.tools import ParallelJob
+from payagram.api_async import Request, Response
 from enum import Enum
 import asyncio
 from concurrent.futures import ThreadPoolExecutor

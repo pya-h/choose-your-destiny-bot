@@ -1,15 +1,14 @@
 import logging
-from payagraph.bot import *
-from payagraph.containers import *
-from payagraph.keyboards import *
-from payagraph.tools import *
+from payagram.bot import *
+from payagram.containers import *
+from payagram.keyboards import *
+from payagram.tools import *
 from decouple import config
 from models.user import UserStates, User
 from tools import manuwriter
 from typing import Union
 from tools.exceptions import *
 from hugchat_interface import HugchatInterface
-import os
 import shutil
 
 
