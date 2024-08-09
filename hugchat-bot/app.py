@@ -76,7 +76,6 @@ bot = TelegramBot(token=BOT_TOKEN, username=BOT_USERNAME, host_url=HOST_URL, tex
 bot.add_command_handler(command="start", handler=play_handler)
 bot.add_state_handler(state=UserStates.PLAYING, handler=playing_state_handler)
 bot.add_message_handler(message=bot.keyword('play'), handler=play_handler)
-bot.start_polling(0.1)
 
 if __name__ == '__main__':
-    bot.go(debug=False)  # Run the Flask app
+    bot.go(debug=False, polling=True, polling_interval=0.1)  # Run the Flask app
